@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Core Account Subscription Estimate
+
+Parameters:
+  WorkGroup:
+    Description: Name of the Athena workgroup
+    Type: String
+    Default: cleanroom
+  LogGroup:
+    Description: Name of the cloudwatch log group
+    Type: String
+    Default: core-account-subscription-estimate
+  RoleArn:
+    Description: The ARN of the role to use for the step function
+    Type: String
+
+Resources:
+  Log:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroup
+      RetentionInDays: 30
+
+  Step:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: CoreAccountSubscriptionEstimate
+      RoleArn: !Ref RoleArn
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt Log.Arn
+        IncludeExecutionData: true
+        Level: ERROR
+      Definition:
+        Comment: Execute a subscription estimate query
+        StartAt: StartQueryExecution
+        States:
+          StartQueryExecution:
+            Type: Task
+            Resource: arn:aws:states:::athena:startQueryExecution.sync
+            Parameters:
+              "QueryString.$": "$.Query"
+              WorkGroup: !Ref WorkGroup
+            ResultPath: $.Execution
+            End: true

@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Core Account Subscription Estimate Role
+
+Parameters:
+  RoleName:
+    Description: Name of the IAM Role for the deployment
+    Type: String
+    Default: "GitHubDeployCoreAccountSubscriptionEstimate"
+
+Resources:
+  Role:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-2:${AWS::AccountId}:applications/core-aws-github-role
+        SemanticVersion: 0.0.3
+      Parameters:
+        GitHubOrg: tiki
+        RepositoryName: core-subscription
+        RoleName: !Ref RoleName
+
+  Policy:
+    Type: AWS::IAM::RolePolicy
+    DependsOn: Role
+    Properties:
+      RoleName: !Ref RoleName
+      PolicyName: DeploymentPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: cloudformation:*
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf-*
+              - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+          - Effect: Allow
+            Action: cloudformation:ListStacks
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: arn:aws:s3:::mytiki-sam-deploy/*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:PutRetentionPolicy
+              - logs:DescribeLogGroups
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:PublishStateMachineVersion
+              - states:TagResource
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreAccountSubscriptionEstimate
