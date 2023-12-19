@@ -17,7 +17,7 @@ Resources:
         SemanticVersion: 0.0.3
       Parameters:
         GitHubOrg: tiki
-        RepositoryName: core-subscription
+        RepositoryName: core-account-subscription-estimate
         RoleName: !Ref RoleName
 
   Policy:
@@ -32,7 +32,7 @@ Resources:
           - Effect: Allow
             Action: cloudformation:*
             Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf-*
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf/*
               - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
           - Effect: Allow
             Action: cloudformation:ListStacks
@@ -56,3 +56,11 @@ Resources:
               - states:TagResource
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreAccountSubscriptionEstimate
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAwsAccountSf
+            Condition:
+              StringEquals:
+                iam:PassedToService:
+                  - states.amazonaws.com

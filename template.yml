@@ -11,9 +11,6 @@ Parameters:
     Description: Name of the cloudwatch log group
     Type: String
     Default: core-account-subscription-estimate
-  RoleArn:
-    Description: The ARN of the role to use for the step function
-    Type: String
 
 Resources:
   Log:
@@ -26,7 +23,7 @@ Resources:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       StateMachineName: CoreAccountSubscriptionEstimate
-      RoleArn: !Ref RoleArn
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAwsAccountSf
       LoggingConfiguration:
         Destinations:
           - CloudWatchLogsLogGroup:
