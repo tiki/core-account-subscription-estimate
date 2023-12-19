@@ -56,3 +56,11 @@ Resources:
               - states:TagResource
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreAccountSubscriptionEstimate
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAwsAccountSf
+            Condition:
+              StringEquals:
+                iam:PassedToService:
+                  - states.amazonaws.com
