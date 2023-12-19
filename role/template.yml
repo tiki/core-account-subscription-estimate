@@ -32,7 +32,7 @@ Resources:
           - Effect: Allow
             Action: cloudformation:*
             Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf-*
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf/*
               - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
           - Effect: Allow
             Action: cloudformation:ListStacks

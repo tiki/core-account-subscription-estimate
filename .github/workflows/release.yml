@@ -47,7 +47,7 @@ jobs:
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: SAM Deploy Catalog
+      - name: SAM Deploy Step Function
         run: |
           sam build
           sam package
