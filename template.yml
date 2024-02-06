@@ -31,14 +31,75 @@ Resources:
         IncludeExecutionData: true
         Level: ERROR
       Definition:
-        Comment: Execute a subscription estimate query
-        StartAt: StartQueryExecution
+        Comment: A state machine that executes the subscriptions estimate
+        StartAt: Parallel
         States:
-          StartQueryExecution:
-            Type: Task
-            Resource: arn:aws:states:::athena:startQueryExecution.sync
+          Parallel:
+            Type: Parallel
+            Next: TransformResult
+            Branches:
+              - StartAt: ExecuteCountQuery
+                States:
+                  ExecuteCountQuery:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:startQueryExecution.sync
+                    Parameters:
+                      QueryString.$: States.Format('SELECT COUNT(*) FROM ({})', $.query)
+                      WorkGroup: primary
+                    ResultSelector:
+                      Type: count
+                      QueryExecution.$: $.QueryExecution
+                    Next: GetCountResults
+                  GetCountResults:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:getQueryResults
+                    Parameters:
+                      MaxResults: 10
+                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
+                    End: true
+                    ResultPath: $.Results
+              - StartAt: ExecuteSampleQuery
+                States:
+                  ExecuteSampleQuery:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:startQueryExecution.sync
+                    Parameters:
+                      QueryString.$: States.Format('SELECT * FROM ({}) LIMIT 10', $.query)
+                      WorkGroup: primary
+                    ResultSelector:
+                      Type: sample
+                      QueryExecution.$: $.QueryExecution
+                    Next: GetSampleResults
+                  GetSampleResults:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:getQueryResults
+                    Parameters:
+                      MaxResults: 10
+                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
+                    End: true
+                    ResultPath: $.Results
+            ResultPath: $.Results
+          TransformResult:
+            Type: Pass
+            Next: CallThirdPartyAPI
             Parameters:
-              "QueryString.$": "$.Query"
-              WorkGroup: !Ref WorkGroup
-            ResultPath: $.Execution
+              requestId.$: $.requestId
+              count.$: $.Results[0].Results.ResultSet.Rows[1].Data[0].VarCharValue
+              sample.$: $.Results[1].Results.ResultSet.Rows
+          CallThirdPartyAPI:
+            Type: Task
+            Resource: arn:aws:states:::http:invoke
+            Parameters:
+              ApiEndpoint: https://account.mytiki.com/api/latest/ocean
+              Method: POST
+              Authentication:
+                ConnectionArn: >-
+                  arn:aws:events:us-east-2:637423521931:connection/core-account-sf/264f08b9-ca56-41a0-9dc3-3df8dbe57fc3
+              QueryParameters:
+                event: subscription-estimate
+              RequestBody:
+                sample.$: $.sample
+                count.$: $.count
+                requestId.$: $.requestId
             End: true
+

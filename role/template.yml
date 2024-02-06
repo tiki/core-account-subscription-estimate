@@ -55,7 +55,7 @@ Resources:
               - states:PublishStateMachineVersion
               - states:TagResource
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreAccountSubscriptionEstimate
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:EstimateSubscriptionEstateMachine
           - Effect: Allow
             Action: iam:PassRole
             Resource:
