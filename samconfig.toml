@@ -2,7 +2,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "core-account-subscription-estimate-sf"
-s3_bucket = "mytiki-sam-deploy"
+s3_bucket = "mytiki-core-ocean-cf-deploy"
 s3_prefix = "core/aws/account/subscription/estimate/sf"
 region = "us-east-2"
 

@@ -4,8 +4,8 @@ on:
   pull_request:
     branches:
       - main
-    types:
-      - closed
+#    types:
+#      - closed
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   Deploy:
-    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
+#    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     environment: Production
     permissions:
@@ -47,19 +47,19 @@ jobs:
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: SAM Deploy Step Function
-        run: |
-          sam build
-          sam package
-          sam deploy
-
-      - name: Get Version
-        id: semver
-        uses: ietf-tools/semver-action@v1
-        with:
-          token: ${{ github.token }}
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.semver.outputs.nextStrict }}
+#      - name: SAM Deploy Step Function
+#        run: |
+#          sam build
+#          sam package
+#          sam deploy
+#
+#      - name: Get Version
+#        id: semver
+#        uses: ietf-tools/semver-action@v1
+#        with:
+#          token: ${{ github.token }}
+#
+#      - name: Create Release
+#        uses: ncipollo/release-action@v1
+#        with:
+#          tag: ${{ steps.semver.outputs.nextStrict }}
