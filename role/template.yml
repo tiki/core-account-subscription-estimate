@@ -69,3 +69,17 @@ Resources:
               StringEquals:
                 iam:PassedToService:
                   - states.amazonaws.com
+          - Effect: Allow
+            Action:
+              - iam:CreateRole
+              - iam:GetRole
+              - iam:UpdateRole
+              - iam:DeleteRole
+              - iam:TagRole
+              - iam:GetRolePolicy
+              - iam:PutRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:AttachRolePolicy
+              - iam:DetachRolePolicy
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAccountSubscriptionEstimateSF
