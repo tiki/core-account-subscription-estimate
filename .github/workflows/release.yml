@@ -49,9 +49,9 @@ jobs:
 
       - name: SAM Deploy Step Function
         run: |
-          sam build
-          sam package
-          sam deploy
+          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }}
+          sam package --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }}
+          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }}
 #
 #      - name: Get Version
 #        id: semver

@@ -6,6 +6,7 @@ Parameters:
   WorkGroup:
     Description: Name of the Athena workgroup
     Type: String
+    Default: primary
   LogGroup:
     Description: Name of the cloudwatch log group
     Type: String
