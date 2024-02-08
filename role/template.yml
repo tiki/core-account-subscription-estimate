@@ -46,7 +46,7 @@ Resources:
             Action:
               - s3:PutObject
               - s3:GetObject
-            Resource: arn:aws:s3:::mytiki-sam-deploy/*
+            Resource: arn:aws:s3:::mytiki-core-ocean-cf-deploy/*
           - Effect: Allow
             Action:
               - logs:CreateLogGroup

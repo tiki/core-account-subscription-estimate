@@ -47,11 +47,11 @@ jobs:
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-#      - name: SAM Deploy Step Function
-#        run: |
-#          sam build
-#          sam package
-#          sam deploy
+      - name: SAM Deploy Step Function
+        run: |
+          sam build
+          sam package
+          sam deploy
 #
 #      - name: Get Version
 #        id: semver
