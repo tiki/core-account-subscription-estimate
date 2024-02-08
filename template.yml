@@ -45,7 +45,7 @@ Resources:
                     Resource: arn:aws:states:::athena:startQueryExecution.sync
                     Parameters:
                       QueryString.$: States.Format('SELECT COUNT(*) FROM ({})', $.query)
-                      WorkGroup: primary
+                      WorkGroup: !Ref WorkGroup
                     ResultSelector:
                       Type: count
                       QueryExecution.$: $.QueryExecution
@@ -65,7 +65,7 @@ Resources:
                     Resource: arn:aws:states:::athena:startQueryExecution.sync
                     Parameters:
                       QueryString.$: States.Format('SELECT * FROM ({}) LIMIT 10', $.query)
-                      WorkGroup: primary
+                      WorkGroup: !Ref WorkGroup
                     ResultSelector:
                       Type: sample
                       QueryExecution.$: $.QueryExecution
