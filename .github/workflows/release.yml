@@ -22,10 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: SetVars
-        run: |
-          sed -i 's/${AWS::AccountId}/${{ secrets.AWS_ACCOUNT_ID }}/' role/template.yml
-
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -49,9 +45,9 @@ jobs:
 
       - name: SAM Deploy Step Function
         run: |
-          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }}
+          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
           sam package 
-          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} --no-fail-on-empty-changeset
+          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
 #
 #      - name: Get Version
 #        id: semver

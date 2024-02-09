@@ -14,6 +14,9 @@ Parameters:
   ConnectionId:
     Description: The id of authorization connection (core-account-sf/<id>)
     Type: String
+  OceanAccount:
+    Description: Account ID for the ocean catalog
+    Type: String
 
 Resources:
   Step:
@@ -180,6 +183,10 @@ Resources:
                   - glue:BatchCreatePartition
                   - glue:BatchDeletePartition
                 Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:database/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:table/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:userDefinedFunction/*
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*
