@@ -6,24 +6,24 @@ Parameters:
   WorkGroup:
     Description: Name of the Athena workgroup
     Type: String
-    Default: cleanroom
+    Default: primary
   LogGroup:
     Description: Name of the cloudwatch log group
     Type: String
     Default: core-account-subscription-estimate
+  ConnectionId:
+    Description: The id of authorization connection (core-account-sf/<id>)
+    Type: String
+  OceanAccount:
+    Description: Account ID for the ocean catalog
+    Type: String
 
 Resources:
-  Log:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Ref LogGroup
-      RetentionInDays: 30
-
   Step:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       StateMachineName: CoreAccountSubscriptionEstimate
-      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAwsAccountSf
+      RoleArn: !GetAtt Role.Arn
       LoggingConfiguration:
         Destinations:
           - CloudWatchLogsLogGroup:
@@ -31,14 +31,196 @@ Resources:
         IncludeExecutionData: true
         Level: ERROR
       Definition:
-        Comment: Execute a subscription estimate query
-        StartAt: StartQueryExecution
+        Comment: A state machine that executes the subscriptions estimate
+        StartAt: Parallel
         States:
-          StartQueryExecution:
-            Type: Task
-            Resource: arn:aws:states:::athena:startQueryExecution.sync
+          Parallel:
+            Type: Parallel
+            Next: TransformResult
+            Branches:
+              - StartAt: ExecuteCountQuery
+                States:
+                  ExecuteCountQuery:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:startQueryExecution.sync
+                    Parameters:
+                      QueryString.$: States.Format('SELECT COUNT(*) FROM ({})', $.query)
+                      WorkGroup: !Ref WorkGroup
+                    ResultSelector:
+                      Type: count
+                      QueryExecution.$: $.QueryExecution
+                    Next: GetCountResults
+                  GetCountResults:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:getQueryResults
+                    Parameters:
+                      MaxResults: 10
+                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
+                    End: true
+                    ResultPath: $.Results
+              - StartAt: ExecuteSampleQuery
+                States:
+                  ExecuteSampleQuery:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:startQueryExecution.sync
+                    Parameters:
+                      QueryString.$: States.Format('SELECT * FROM ({}) LIMIT 10', $.query)
+                      WorkGroup: !Ref WorkGroup
+                    ResultSelector:
+                      Type: sample
+                      QueryExecution.$: $.QueryExecution
+                    Next: GetSampleResults
+                  GetSampleResults:
+                    Type: Task
+                    Resource: arn:aws:states:::athena:getQueryResults
+                    Parameters:
+                      MaxResults: 10
+                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
+                    End: true
+                    ResultPath: $.Results
+            ResultPath: $.Results
+          TransformResult:
+            Type: Pass
+            Next: CallThirdPartyAPI
             Parameters:
-              "QueryString.$": "$.Query"
-              WorkGroup: !Ref WorkGroup
-            ResultPath: $.Execution
+              requestId.$: $.requestId
+              count.$: $.Results[0].Results.ResultSet.Rows[1].Data[0].VarCharValue
+              sample.$: $.Results[1].Results.ResultSet.Rows
+          CallThirdPartyAPI:
+            Type: Task
+            Resource: arn:aws:states:::http:invoke
+            Parameters:
+              ApiEndpoint: https://account.mytiki.com/api/latest/ocean
+              Method: POST
+              Authentication:
+                ConnectionArn: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/core-account-sf/${ConnectionId}
+              QueryParameters:
+                event: subscription-estimate
+              RequestBody:
+                sample.$: $.sample
+                count.$: $.count
+                requestId.$: $.requestId
             End: true
+
+  Log:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroup
+      RetentionInDays: 30
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CoreAccountSubscriptionEstimateSF
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: states.amazonaws.com
+      Policies:
+        - PolicyName: Cloudwatch
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogStream
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutLogEvents
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
+        - PolicyName: Athena
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:startQueryExecution
+                  - athena:stopQueryExecution
+                  - athena:getQueryExecution
+                  - athena:getDataCatalog
+                  - athena:getQueryResults
+                Resource:
+                  - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/*
+                  - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:datacatalog/*
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:AbortMultipartUpload
+                  - s3:CreateBucket
+                  - s3:PutObject
+                Resource: arn:aws:s3:::*
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:CreateDatabase
+                  - glue:UpdateDatabase
+                  - glue:DeleteDatabase
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:CreateTable
+                  - glue:UpdateTable
+                  - glue:DeleteTable
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                  - glue:CreatePartition
+                  - glue:UpdatePartition
+                  - glue:DeletePartition
+                  - glue:BatchDeleteTable
+                  - glue:BatchGetPartition
+                  - glue:BatchCreatePartition
+                  - glue:BatchDeletePartition
+                Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:database/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:table/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:userDefinedFunction/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:userDefinedFunction/*
+              - Effect: Allow
+                Action: lakeformation:GetDataAccess
+                Resource: "*"
+        - PolicyName: Http
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: events:RetrieveConnectionCredentials
+                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/core-account-sf/*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:events!connection/core-account-sf/*
+              - Effect: Allow
+                Action: states:InvokeHTTPEndpoint
+                Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+                Condition:
+                  StringEquals:
+                    states:HTTPEndpoint: https://account.mytiki.com/api/latest/ocean
+                    states:HTTPMethod: POST
+        - PolicyName: XRay
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: "*"
