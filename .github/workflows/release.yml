@@ -25,7 +25,7 @@ jobs:
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubDeployBase
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/GitHubDeployBase
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
@@ -39,16 +39,16 @@ jobs:
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubDeployCoreAccountSubscriptionEstimate
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/GitHubDeployCoreAccountSubscriptionEstimate
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-#      - name: SAM Deploy Step Function
-#        run: |
-#          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
-#          sam package
-#          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
-#
+      - name: SAM Deploy Step Function
+        run: |
+          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
+          sam package
+          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
+
 #      - name: Get Version
 #        id: semver
 #        uses: ietf-tools/semver-action@v1
