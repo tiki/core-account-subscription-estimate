@@ -43,11 +43,11 @@ jobs:
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: SAM Deploy Step Function
-        run: |
-          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
-          sam package 
-          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
+#      - name: SAM Deploy Step Function
+#        run: |
+#          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
+#          sam package
+#          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
 #
 #      - name: Get Version
 #        id: semver
