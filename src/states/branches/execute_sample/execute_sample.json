@@ -1,0 +1,4 @@
+{
+  "StartAt": "ExecuteSample",
+  "States": {}
+}
