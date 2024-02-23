@@ -6,7 +6,7 @@ Parameters:
   Name:
     Description: The service name (lowercase pipecase)
     Type: String
-    Default: core-account-cleanroom-create
+    Default: core-account-subscription-estimate
   Workgroup:
     Description: The athena workgroup to use
     Type: String

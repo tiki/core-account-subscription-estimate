@@ -12,13 +12,17 @@ compile_branch_sample: src/states/branches/execute_sample/execute_sample.json $(
 	mkdir -p out/states/branches
 	jq -s '.[0] as $$base | .[1:] | reduce .[] as $$state ($$base; .States += $$state)' $^ > out/states/branches/execute_sample.json
 
+compile_machine: src/state_machine.json $(wildcard out/states/*.json)
+	mkdir -p out
+	jq -s '.[0] as $$base | .[1:] | reduce .[] as $$state ($$base; .States += $$state)' $^ > out/state_machine.json
+
 compile: src/state_machine.json $(wildcard out/states/*.json)
 	mkdir -p out/states
 	cp src/states/*.json out/states
 	$(MAKE) compile_branch_count
 	$(MAKE) compile_branch_sample
 	$(MAKE) compile_branches
-	jq -s '.[0] as $$base | .[1:] | reduce .[] as $$state ($$base; .States += $$state)' $^ > out/state_machine.json
+	$(MAKE) compile_machine
 	cd infra/step_function && sam validate --lint
 
 build:

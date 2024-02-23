@@ -1,4 +1,4 @@
 {
-  "StartAt": "ExecuteSample",
+  "StartAt": "ExecuteSampleQuery",
   "States": {}
 }
