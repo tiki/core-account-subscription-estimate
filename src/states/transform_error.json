@@ -1,0 +1,13 @@
+{
+  "TransformError": {
+    "Type": "Pass",
+    "Next": "SendError",
+    "Parameters": {
+      "requestId.$": "$.requestId",
+      "error": {
+        "message.$": "$.Error.Error",
+        "cause.$": "$.Error.Cause"
+      }
+    }
+  }
+}

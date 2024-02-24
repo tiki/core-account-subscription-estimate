@@ -1,0 +1,12 @@
+{
+  "GetCountResults": {
+    "End": true,
+    "Parameters": {
+      "MaxResults": 10,
+      "QueryExecutionId.$": "$.QueryExecution.QueryExecutionId"
+    },
+    "Resource": "arn:aws:states:::athena:getQueryResults",
+    "ResultPath": "$.Results",
+    "Type": "Task"
+  }
+}

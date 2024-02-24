@@ -1,0 +1,18 @@
+{
+  "Parallel": {
+    "Branches": [],
+    "Next": "TransformResult",
+    "ResultPath": "$.Results",
+    "Type": "Parallel",
+    "Catch": [
+      {
+        "ErrorEquals": [
+          "States.ALL"
+        ],
+        "Next": "TransformError",
+        "Comment": "catch all",
+        "ResultPath": "$.Error"
+      }
+    ]
+  }
+}

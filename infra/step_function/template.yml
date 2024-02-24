@@ -3,157 +3,58 @@ Transform: AWS::Serverless-2016-10-31
 Description: Core Account Subscription Estimate
 
 Parameters:
-  WorkGroup:
-    Description: Name of the Athena workgroup
-    Type: String
-    Default: primary
-  LogGroup:
-    Description: Name of the cloudwatch log group
+  Name:
+    Description: The service name (lowercase pipecase)
     Type: String
     Default: core-account-subscription-estimate
-  ConnectionId:
-    Description: The id of authorization connection (core-account-sf/<id>)
+  Workgroup:
+    Description: The athena workgroup to use
+    Type: String
+    Default: primary
+  ApiEndpoint:
+    Description: The base http endpoint to receive the result (without https:// prefix)
+    Type: String
+    Default: account.mytiki.com
+  ApiAuthorization:
+    Description: The EventBridge connection id (i.e. name/id)
     Type: String
   OceanAccount:
     Description: Account ID for the ocean catalog
     Type: String
+  OceanDatabase:
+    Description: The database name within the ocean catalog. Requires a resource link.
+    Type: String
+    Default: tiki
 
 Resources:
   Step:
-    Type: AWS::StepFunctions::StateMachine
+    Type: AWS::Serverless::StateMachine
     Properties:
-      StateMachineName: CoreAccountSubscriptionEstimate
-      RoleArn: !GetAtt Role.Arn
-      LoggingConfiguration:
+      Name: !Ref Name
+      Type: STANDARD
+      Role: !GetAtt Role.Arn
+      DefinitionUri: ../../out/state_machine.json
+      DefinitionSubstitutions:
+        athena_workgroup: !Ref Workgroup
+        api_endpoint: !Ref ApiEndpoint
+        api_authorization: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/${ApiAuthorization}
+      Tracing:
+        Enabled: true
+      Logging:
+        Level: ERROR
+        IncludeExecutionData: true
         Destinations:
           - CloudWatchLogsLogGroup:
-              LogGroupArn: !GetAtt Log.Arn
-        IncludeExecutionData: true
-        Level: ERROR
-      Definition:
-        Comment: A state machine that executes the subscriptions estimate
-        StartAt: Parallel
-        States:
-          Parallel:
-            Type: Parallel
-            Next: TransformResult
-            Branches:
-              - StartAt: ExecuteCountQuery
-                States:
-                  ExecuteCountQuery:
-                    Type: Task
-                    Resource: arn:aws:states:::athena:startQueryExecution.sync
-                    Parameters:
-                      QueryString.$: States.Format('SELECT COUNT(*) FROM ({})', $.query)
-                      WorkGroup: !Ref WorkGroup
-                    ResultSelector:
-                      Type: count
-                      QueryExecution.$: $.QueryExecution
-                    Next: GetCountResults
-                  GetCountResults:
-                    Type: Task
-                    Resource: arn:aws:states:::athena:getQueryResults
-                    Parameters:
-                      MaxResults: 10
-                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
-                    End: true
-                    ResultPath: $.Results
-              - StartAt: ExecuteSampleQuery
-                States:
-                  ExecuteSampleQuery:
-                    Type: Task
-                    Resource: arn:aws:states:::athena:startQueryExecution.sync
-                    Parameters:
-                      QueryString.$: States.Format('SELECT * FROM ({}) LIMIT 10', $.query)
-                      WorkGroup: !Ref WorkGroup
-                    ResultSelector:
-                      Type: sample
-                      QueryExecution.$: $.QueryExecution
-                    Next: GetSampleResults
-                  GetSampleResults:
-                    Type: Task
-                    Resource: arn:aws:states:::athena:getQueryResults
-                    Parameters:
-                      MaxResults: 10
-                      QueryExecutionId.$: $.QueryExecution.QueryExecutionId
-                    End: true
-                    ResultPath: $.Results
-            ResultPath: $.Results
-            Catch:
-              - ErrorEquals:
-                  - States.ALL
-                Next: TransformError
-                Comment: catch all
-                ResultPath: $.Error
-          TransformResult:
-            Type: Pass
-            Next: ReturnResult
-            Parameters:
-              requestId.$: $.requestId
-              count.$: $.Results[0].Results.ResultSet.Rows[1].Data[0].VarCharValue
-              sample.$: $.Results[1].Results.ResultSet.Rows
-          ReturnResult:
-            Type: Task
-            Resource: arn:aws:states:::http:invoke
-            Parameters:
-              ApiEndpoint: https://account.mytiki.com/api/latest/ocean/estimate
-              Method: POST
-              Authentication:
-                ConnectionArn: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/core-account-sf/${ConnectionId}
-              QueryParameters:
-                event: subscription-estimate
-              RequestBody:
-                sample.$: $.sample
-                count.$: $.count
-                requestId.$: $.requestId
-            End: true
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                BackoffRate: 2
-                IntervalSeconds: 1
-                MaxAttempts: 3
-                Comment: retry all
-          TransformError:
-            Type: Pass
-            Next: ReturnError
-            Parameters:
-              requestId.$: $.requestId
-              error:
-                message.$: $.Error.Error
-                cause.$: $.Error.Cause
-          ReturnError:
-            Type: Task
-            Resource: arn:aws:states:::http:invoke
-            Parameters:
-              ApiEndpoint: https://account.mytiki.com/api/latest/ocean/error
-              Method: POST
-              Authentication:
-                ConnectionArn: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/core-account-sf/${ConnectionId}
-              QueryParameters:
-                event: subscription-estimate
-              RequestBody:
-                error.$: $.error
-                requestId.$: $.requestId
-            End: true
-            Retry:
-              - ErrorEquals:
-                  - States.ALL
-                BackoffRate: 2
-                IntervalSeconds: 1
-                MaxAttempts: 3
-                Comment: retry all
-
-  Log:
+              LogGroupArn: !GetAtt LogGroup.Arn
+  LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref LogGroup
+      LogGroupName: !Ref Name
       RetentionInDays: 30
-
   Role:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: CoreAccountSubscriptionEstimateSF
+      RoleName: !Ref Name
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -242,18 +143,20 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: events:RetrieveConnectionCredentials
-                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/core-account-sf/*
+                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:connection/${ApiAuthorization}
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
                   - secretsmanager:DescribeSecret
-                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:events!connection/core-account-sf/*
+                Resource: !Sub
+                  - arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:events!connection/${ApiAuthorizationName}/*
+                  - ApiAuthorizationName: !Select [ 0, !Split [ "/" , !Ref ApiAuthorization ] ]
               - Effect: Allow
                 Action: states:InvokeHTTPEndpoint
                 Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
                 Condition:
                   StringLike:
-                    states:HTTPEndpoint: https://account.mytiki.com/api/latest/ocean/*
+                    states:HTTPEndpoint: !Sub https://${ApiEndpoint}/*
                     states:HTTPMethod: POST
         - PolicyName: XRay
           PolicyDocument:
@@ -266,8 +169,52 @@ Resources:
                   - xray:GetSamplingRules
                   - xray:GetSamplingTargets
                 Resource: "*"
+        - PolicyName: Glue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:userDefinedFunction/*
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:CreateDatabase
+                  - glue:UpdateDatabase
+                  - glue:DeleteDatabase
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:CreateTable
+                  - glue:UpdateTable
+                  - glue:DeleteTable
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                  - glue:CreatePartition
+                  - glue:UpdatePartition
+                  - glue:DeletePartition
+                  - glue:BatchDeleteTable
+                  - glue:BatchGetPartition
+                  - glue:BatchCreatePartition
+                  - glue:BatchDeletePartition
+        - PolicyName: LakeFormation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - lakeformation:GetDataAccess
+                  - lakeformation:RegisterResource
+                  - lakeformation:DeregisterResource
+                  - lakeformation:GrantPermissions
+                  - lakeformation:BatchGrantPermissions
+                  - lakeformation:RevokePermissions
+                  - lakeformation:BatchRevokePermissions
 
-  LFDatabaseRF:
+  PermissionDbRl:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -277,9 +224,8 @@ Resources:
       Resource:
         DatabaseResource:
           CatalogId: !Ref AWS::AccountId
-          Name: tiki
-
-  LFDatabase:
+          Name: !Ref OceanDatabase
+  PermissionDb:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -289,9 +235,8 @@ Resources:
       Resource:
         DatabaseResource:
           CatalogId: !Ref OceanAccount
-          Name: tiki
-
-  LFTableRF:
+          Name: !Ref OceanDatabase
+  PermissionTbRl:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -302,10 +247,9 @@ Resources:
       Resource:
         TableResource:
           CatalogId: !Ref AWS::AccountId
-          DatabaseName: tiki
+          DatabaseName: !Ref OceanDatabase
           TableWildcard: {}
-
-  LFTable:
+  PermissionTb:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -316,5 +260,5 @@ Resources:
       Resource:
         TableResource:
           CatalogId: !Ref OceanAccount
-          DatabaseName: tiki
+          DatabaseName: !Ref OceanDatabase
           TableWildcard: {}

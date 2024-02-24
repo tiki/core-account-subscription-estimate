@@ -1,0 +1,33 @@
+{
+  "SendResult": {
+    "End": true,
+    "Parameters": {
+      "ApiEndpoint": "https://${api_endpoint}/api/latest/ocean/estimate",
+      "Authentication": {
+        "ConnectionArn": "${api_authorization}"
+      },
+      "Method": "POST",
+      "QueryParameters": {
+        "event": "subscription-estimate"
+      },
+      "RequestBody": {
+        "count.$": "$.count",
+        "requestId.$": "$.requestId",
+        "sample.$": "$.sample"
+      }
+    },
+    "Resource": "arn:aws:states:::http:invoke",
+    "Type": "Task",
+    "Retry": [
+      {
+        "ErrorEquals": [
+          "States.ALL"
+        ],
+        "BackoffRate": 2,
+        "IntervalSeconds": 1,
+        "MaxAttempts": 3,
+        "Comment": "retry all"
+      }
+    ]
+  }
+}

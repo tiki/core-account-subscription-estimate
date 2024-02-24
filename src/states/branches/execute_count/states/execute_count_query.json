@@ -1,0 +1,15 @@
+{
+  "ExecuteCountQuery": {
+    "Next": "GetCountResults",
+    "Parameters": {
+      "QueryString.$": "States.Format('SELECT COUNT(*) FROM ({})', $.query)",
+      "WorkGroup": "${athena_workgroup}"
+    },
+    "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+    "ResultSelector": {
+      "QueryExecution.$": "$.QueryExecution",
+      "Type": "count"
+    },
+    "Type": "Task"
+  }
+}
