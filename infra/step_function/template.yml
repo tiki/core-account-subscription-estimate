@@ -21,6 +21,10 @@ Parameters:
   OceanAccount:
     Description: Account ID for the ocean catalog
     Type: String
+  OceanDatabase:
+    Description: Account ID for the ocean catalog
+    Type: String
+    Default: tiki
 
 Resources:
   Step:
@@ -144,7 +148,9 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                   - secretsmanager:DescribeSecret
-                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:events!connection/${ApiAuthorization}
+                Resource: !Sub
+                  - arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:events!connection/${ApiAuthorizationName}/*
+                  - ApiAuthorizationName: !Select [ 0, !Split [ "/" , !Ref ApiAuthorization ] ]
               - Effect: Allow
                 Action: states:InvokeHTTPEndpoint
                 Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
@@ -163,8 +169,52 @@ Resources:
                   - xray:GetSamplingRules
                   - xray:GetSamplingTargets
                 Resource: "*"
+        - PolicyName: Glue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:userDefinedFunction/*
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:CreateDatabase
+                  - glue:UpdateDatabase
+                  - glue:DeleteDatabase
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:CreateTable
+                  - glue:UpdateTable
+                  - glue:DeleteTable
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                  - glue:CreatePartition
+                  - glue:UpdatePartition
+                  - glue:DeletePartition
+                  - glue:BatchDeleteTable
+                  - glue:BatchGetPartition
+                  - glue:BatchCreatePartition
+                  - glue:BatchDeletePartition
+        - PolicyName: LakeFormation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - lakeformation:GetDataAccess
+                  - lakeformation:RegisterResource
+                  - lakeformation:DeregisterResource
+                  - lakeformation:GrantPermissions
+                  - lakeformation:BatchGrantPermissions
+                  - lakeformation:RevokePermissions
+                  - lakeformation:BatchRevokePermissions
 
-  LFDatabaseRF:
+  PermissionDbRl:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -174,8 +224,8 @@ Resources:
       Resource:
         DatabaseResource:
           CatalogId: !Ref AWS::AccountId
-          Name: tiki
-  LFDatabase:
+          Name: !Ref OceanDatabase
+  PermissionDb:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -185,8 +235,8 @@ Resources:
       Resource:
         DatabaseResource:
           CatalogId: !Ref OceanAccount
-          Name: tiki
-  LFTableRF:
+          Name: !Ref OceanDatabase
+  PermissionTbRl:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -197,9 +247,9 @@ Resources:
       Resource:
         TableResource:
           CatalogId: !Ref AWS::AccountId
-          DatabaseName: tiki
+          DatabaseName: !Ref OceanDatabase
           TableWildcard: {}
-  LFTable:
+  PermissionTb:
     Type: AWS::LakeFormation::Permissions
     Properties:
       DataLakePrincipal:
@@ -210,5 +260,5 @@ Resources:
       Resource:
         TableResource:
           CatalogId: !Ref OceanAccount
-          DatabaseName: tiki
+          DatabaseName: !Ref OceanDatabase
           TableWildcard: {}
