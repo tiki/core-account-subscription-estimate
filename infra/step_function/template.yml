@@ -22,7 +22,7 @@ Parameters:
     Description: Account ID for the ocean catalog
     Type: String
   OceanDatabase:
-    Description: Account ID for the ocean catalog
+    Description: The database name within the ocean catalog. Requires a resource link.
     Type: String
     Default: tiki
 

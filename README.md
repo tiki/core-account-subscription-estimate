@@ -48,6 +48,7 @@ Standard configuration parameters are provided the same way using the `--paramet
 - **Workgroup**: The athena workgroup to use. Default is primary.
 - **Bucket**: The S3 bucket to host the cleanroom. Default is mytiki-ocean
 - **ApiEndpoint**: The base http endpoint to receive the result (without https:// prefix). Default is account.mytiki.com
+- **OceanDatabase**: The database name within the ocean catalog. Requires a resource link. Default is tiki
 
 ## Build and Deploy
 
