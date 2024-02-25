@@ -20,13 +20,6 @@ Parameters:
     Type: String
 
 Resources:
-  Admin:
-    Type: AWS::LakeFormation::DataLakeSettings
-    DependsOn: Role
-    Properties:
-      Admins:
-        - DataLakePrincipalIdentifier: !GetAtt Role.Arn
-
   Role:
     Type: AWS::IAM::Role
     Properties:
@@ -45,7 +38,7 @@ Resources:
 
   Policy:
     Type: AWS::IAM::RolePolicy
-    DependsOn: Admin
+    DependsOn: Role
     Properties:
       RoleName: !Ref Name
       PolicyName: DeploymentPolicy
@@ -99,6 +92,23 @@ Resources:
               - iam:DetachRolePolicy
             Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${StepFunction}
           - Effect: Allow
-            Action:
-              - lakeformation:GrantPermissions
+            Action: lakeformation:GrantPermissions
             Resource: "*"
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetDatabases
+              - glue:GetTable
+              - glue:GetTables
+              - glue:GetPartition
+              - glue:GetPartitions
+              - glue:BatchGetPartition
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:userDefinedFunction/*
+              - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:table/*
+              - !Sub arn:aws:glue:${AWS::Region}:${OceanAccount}:userDefinedFunction/*
