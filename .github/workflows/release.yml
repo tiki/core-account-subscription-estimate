@@ -46,9 +46,9 @@ jobs:
       - name: SAM Deploy Step Function
         run: |
           make compile
-          make build flags="--parameter-overrides ApiAuthorization=${{ vars.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}"
+          make build flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}"
           make package
-          make deploy flags="--parameter-overrides ApiAuthorization=${{ vars.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset"
+          make deploy flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset"
 
       - name: Get Version
         id: semver
