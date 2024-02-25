@@ -32,9 +32,9 @@ jobs:
       - name: SAM Deploy Role
         run: |
           cd infra/deploy
-          sam build
+          sam build --parameter-overrides OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}
           sam package
-          sam deploy --no-fail-on-empty-changeset
+          sam deploy --no-fail-on-empty-changeset --parameter-overrides OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}
 
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -46,9 +46,9 @@ jobs:
       - name: SAM Deploy Step Function
         run: |
           make compile
-          make build flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}"
+          make build flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}"
           make package
-          make deploy flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset"
+          make deploy flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.OCEAN_ACCOUNT  }} --no-fail-on-empty-changeset"
 
       - name: Get Version
         id: semver
