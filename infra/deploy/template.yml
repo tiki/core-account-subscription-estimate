@@ -92,7 +92,9 @@ Resources:
               - iam:DetachRolePolicy
             Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${StepFunction}
           - Effect: Allow
-            Action: lakeformation:GrantPermissions
+            Action:
+              - lakeformation:GrantPermissions
+              - lakeformation:GetDataLakeSettings
             Resource: "*"
           - Effect: Allow
             Action:
