@@ -3,16 +3,24 @@ Transform: AWS::Serverless-2016-10-31
 Description: Core Account Subscription Estimate Role
 
 Parameters:
-  RoleName:
+  Name:
     Description: Name of the IAM Role for the deployment
     Type: String
-    Default: "GitHubDeployCoreAccountSubscriptionEstimate"
+    Default: deploy-core-account-subscription-estimate
+  StepFunction:
+    Description: Name of the step function
+    Type: String
+    Default: core-account-subscription-estimate
+  Bucket:
+    Description: Name of the S3 bucket for the deployment
+    Type: String
+    Default: mytiki-core-ocean-cf-deploy
 
 Resources:
   Role:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Ref RoleName
+      RoleName: !Ref Name
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -29,7 +37,7 @@ Resources:
     Type: AWS::IAM::RolePolicy
     DependsOn: Role
     Properties:
-      RoleName: !Ref RoleName
+      RoleName: !Ref Name
       PolicyName: DeploymentPolicy
       PolicyDocument:
         Version: '2012-10-17'
@@ -37,7 +45,7 @@ Resources:
           - Effect: Allow
             Action: cloudformation:*
             Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-account-subscription-estimate-sf/*
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${StepFunction}-sf/*
               - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
           - Effect: Allow
             Action: cloudformation:ListStacks
@@ -46,25 +54,22 @@ Resources:
             Action:
               - s3:PutObject
               - s3:GetObject
-            Resource: arn:aws:s3:::mytiki-core-ocean-cf-deploy/*
+            Resource: !Sub arn:aws:s3:::${Bucket}/*
           - Effect: Allow
             Action:
               - logs:CreateLogGroup
               - logs:PutRetentionPolicy
               - logs:DescribeLogGroups
-            Resource:
-              - "*"
+            Resource: "*"
           - Effect: Allow
             Action:
               - states:CreateStateMachine
               - states:PublishStateMachineVersion
               - states:TagResource
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreAccountSubscriptionEstimate
+            Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunction}
           - Effect: Allow
             Action: iam:PassRole
-            Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAccountSubscriptionEstimateSF
+            Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${StepFunction}
             Condition:
               StringEquals:
                 iam:PassedToService:
@@ -81,5 +86,4 @@ Resources:
               - iam:DeleteRolePolicy
               - iam:AttachRolePolicy
               - iam:DetachRolePolicy
-            Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/CoreAccountSubscriptionEstimateSF
+            Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${StepFunction}

@@ -4,8 +4,8 @@ on:
   pull_request:
     branches:
       - main
-    types:
-      - closed
+#    types:
+#      - closed
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   Deploy:
-    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
+#    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     environment: Production
     permissions:
@@ -31,7 +31,7 @@ jobs:
 
       - name: SAM Deploy Role
         run: |
-          cd role
+          cd infra/deploy
           sam build
           sam package
           sam deploy --no-fail-on-empty-changeset
@@ -39,15 +39,16 @@ jobs:
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/GitHubDeployCoreAccountSubscriptionEstimate
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/deploy-core-account-subscription-estimate
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: SAM Deploy Step Function
         run: |
-          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
-          sam package
-          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
+          make compile
+          make build flags="--parameter-overrides ApiAuthorization=${{ vars.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}"
+          make package
+          make deploy flags="--parameter-overrides ApiAuthorization=${{ vars.API_AUTHORIZATION }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset"
 
       - name: Get Version
         id: semver
