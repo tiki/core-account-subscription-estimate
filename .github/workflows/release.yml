@@ -31,23 +31,24 @@ jobs:
 
       - name: SAM Deploy Role
         run: |
-          cd role
-          sam build
+          cd infra/deploy
+          sam build --parameter-overrides OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}
           sam package
-          sam deploy --no-fail-on-empty-changeset
+          sam deploy --no-fail-on-empty-changeset --parameter-overrides OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}
 
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/GitHubDeployCoreAccountSubscriptionEstimate
+          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_ID }}:role/deploy-core-account-subscription-estimate
           role-session-name: ${{ vars.SESSION_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: SAM Deploy Step Function
         run: |
-          sam build --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }}
-          sam package
-          sam deploy --parameter-overrides ConnectionId=${{ vars.CONNECTION_ID }} OceanAccount=${{ secrets.AWS_ACCOUNT_ID  }} --no-fail-on-empty-changeset
+          make compile
+          make build flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.OCEAN_ACCOUNT  }}"
+          make package
+          make deploy flags="--parameter-overrides ApiAuthorization=${{ secrets.API_AUTHORIZATION }} OceanAccount=${{ secrets.OCEAN_ACCOUNT  }} --no-fail-on-empty-changeset"
 
       - name: Get Version
         id: semver
