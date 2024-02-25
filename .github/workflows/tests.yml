@@ -21,8 +21,5 @@ jobs:
         with:
           use-installer: true
 
-      - name: Validate AWS Template
-        run: sam validate --lint
-
-      - name: Build AWS Template
-        run: sam build
+      - name: Compile
+        run: make compile
