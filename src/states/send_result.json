@@ -2,7 +2,7 @@
   "SendResult": {
     "End": true,
     "Parameters": {
-      "ApiEndpoint": "https://${api_endpoint}/api/latest/ocean/estimate",
+      "ApiEndpoint": "https://${api_endpoint}/api/latest/event/subscription/estimate",
       "Authentication": {
         "ConnectionArn": "${api_authorization}"
       },

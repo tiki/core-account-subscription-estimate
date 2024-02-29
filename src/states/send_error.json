@@ -3,7 +3,7 @@
     "Type": "Task",
     "Resource": "arn:aws:states:::http:invoke",
     "Parameters": {
-      "ApiEndpoint": "https://${api_endpoint}/api/latest/ocean/error",
+      "ApiEndpoint": "https://${api_endpoint}/api/latest/event/error",
       "Method": "POST",
       "Authentication": {
         "ConnectionArn": "${api_authorization}"
