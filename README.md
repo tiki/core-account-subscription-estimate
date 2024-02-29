@@ -15,7 +15,35 @@ Request (JSON)
 }
 ```
 
-Response (JSON)
+Response (JSON) - `/api/latest/ocean/subscription/estimate`
+
+- **requestId**: The unique identifier for the transaction.
+- **count**: The total number of matching rows.
+- **sample**: An array of sample rows matching the query.
+
+```json
+{
+  "requestId": "string",
+  "count": "number",
+  "sample": [
+    [
+      { "VarCharValue":  "string" }
+    ]
+  ]
+}
+```
+
+```json
+{
+  "requestId": "string",
+  "error": {
+    "message": "string",
+    "cause": "string"
+  }
+}
+```
+
+Error Response (JSON) - `/api/latest/ocean/error`
 
 - **requestId**: The unique identifier for the transaction.
 - **error**: An optional error if the transaction failed.

@@ -4,7 +4,7 @@
     "Parameters": {
       "requestId.$": "$.requestId",
       "count.$": "$.Results[0].Results.ResultSet.Rows[1].Data[0].VarCharValue",
-      "sample.$": "$.Results[1].Results.ResultSet.Rows"
+      "sample.$": "$.Results[1].Results.ResultSet.Rows[*].Data"
     },
     "Type": "Pass"
   }
