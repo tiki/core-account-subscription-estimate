@@ -70,6 +70,7 @@ Resources:
               - states:PublishStateMachineVersion
               - states:TagResource
               - states:DescribeStateMachine
+              - states:UpdateStateMachine
             Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunction}
           - Effect: Allow
             Action: iam:PassRole
